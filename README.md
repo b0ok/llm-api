@@ -11,6 +11,7 @@ Everything runs on **free tiers** (Groq, Gemini, OpenRouter) or locally (Ollama)
 | `all_free.py` | Sends one prompt to every configured provider at temperature 0 and 1.0 to compare models and randomness |
 | `agent.py` | Terminal coding agent: 12 tools, approvals for every edit and command, sandboxed file access |
 | `evals.py` | Scores the agent on 11 fixed tasks and logs results to `eval_log.txt` |
+| `agent_skeleton.py` | Build-it-yourself version: the 8 parts of an agent as stubs, with a checker that tells you the next step |
 
 ## Setup
 
