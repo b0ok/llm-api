@@ -1,0 +1,4 @@
+.env
+eval_tmp/
+__pycache__/
+notes.md
