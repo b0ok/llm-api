@@ -36,6 +36,7 @@ It uses the same `GROQ_API_KEY` from `llm-api/.env` as `agent.py` (get a free ke
 ```
 python math_agent.py                                      # default: Canada population x 0.75
 python math_agent.py "add 25 and 15, then multiply by 2"
+python math_agent.py --ollama                             # local qwen2.5:7b via Ollama, no key
 python math_agent.py --test                               # tool self-check, no model calls
 ```
 
@@ -62,6 +63,7 @@ The script prints every message in the run (human, AI tool calls, tool results, 
 - **Let tools do the math.** LLMs make arithmetic mistakes on large numbers. Sending even simple math through a tool makes the result exact and auditable.
 - **The system prompt sets the behavior.** "Use the tools precisely and explain your reasoning clearly" pushes the model to call tools instead of guessing and to show its work.
 - **The model choice matters.** The model has to support tool calling and must not invent tool names. `gpt-oss-120b` scored best in the `../evals.py` runs, which is why this project uses it.
+- **Small models jump ahead.** Running locally, `qwen2.5:7b` called `search_wikipedia` and `multiply_numbers` in the same turn. It multiplied a population it guessed from training data (37.7M) and then reported Wikipedia's 41.5M next to the wrong product. One line in the system prompt ("call one tool at a time and wait for its result... never guess a value a tool can look up") fixed it in 3 of 3 runs. Large hosted models usually get the order right without that line; small local ones need it spelled out.
 - **Read the trace.** When an answer is wrong, the message list shows whether the cause was a bad search, bad parsing of the result, or a bad tool call.
 
 ### Popular built-in tools in LangChain

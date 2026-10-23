@@ -1,6 +1,7 @@
 """AI Math Assistant: LangChain create_agent + arithmetic tools + Wikipedia lookup.
 
 python math_agent.py "What is the population of Canada? Multiply it by 0.75"
+python math_agent.py --ollama "add 25 and 15, then multiply by 2"   # local model, no key
 python math_agent.py --test    # tool self-check, no API calls
 """
 import os, sys
@@ -15,6 +16,7 @@ from langchain_openai import ChatOpenAI
 load_dotenv(Path(__file__).parent.parent / ".env")  # shared llm-api .env (GROQ_API_KEY)
 
 MODEL = "openai/gpt-oss-120b"  # won ../evals.py; free Groq tier
+OLLAMA_MODEL = "qwen2.5:7b"  # local
 
 
 @tool
@@ -59,13 +61,16 @@ def search_wikipedia(query: str) -> str:
 tools_updated = [add_numbers, new_subtract_numbers, multiply_numbers, divide_numbers, search_wikipedia]
 
 
-def build_agent():
-    llm_ai = ChatOpenAI(model=MODEL, api_key=os.getenv("GROQ_API_KEY"),
-                        base_url="https://api.groq.com/openai/v1", timeout=60)
+def build_agent(local=False):
+    if local:  # Ollama speaks the same OpenAI API; the key is ignored but required
+        llm_ai = ChatOpenAI(model=OLLAMA_MODEL, api_key="ollama", base_url="http://localhost:11434/v1", timeout=120)
+    else:
+        llm_ai = ChatOpenAI(model=MODEL, api_key=os.getenv("GROQ_API_KEY"),
+                            base_url="https://api.groq.com/openai/v1", timeout=60)
     return create_agent(
         model=llm_ai,
         tools=tools_updated,
-        system_prompt="You are a helpful assistant that can perform various mathematical operations and look up information. Use the tools precisely and explain your reasoning clearly.",
+        system_prompt="You are a helpful assistant that can perform various mathematical operations and look up information. Use the tools precisely and explain your reasoning clearly. Call one tool at a time and wait for its result before using that number; never guess a value a tool can look up.",
     )
 
 
@@ -83,8 +88,10 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["--test"]:
         sys.exit(test())
     sys.stdout.reconfigure(encoding="utf-8")  # model output has non-cp1252 chars (e.g. 202f)
-    query = " ".join(sys.argv[1:]) or "What is the population of Canada? Multiply it by 0.75"
-    response = build_agent().invoke({"messages": [("human", query)]})
+    args = sys.argv[1:]
+    local = "--ollama" in args
+    query = " ".join(a for a in args if a != "--ollama") or "What is the population of Canada? Multiply it by 0.75"
+    response = build_agent(local).invoke({"messages": [("human", query)]})
 
     print("\nMessage sequence:")
     for i, msg in enumerate(response["messages"]):
