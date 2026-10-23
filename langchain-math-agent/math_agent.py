@@ -1,7 +1,8 @@
 """AI Math Assistant: LangChain create_agent + arithmetic tools + Wikipedia lookup.
 
 python math_agent.py "What is the population of Canada? Multiply it by 0.75"
-python math_agent.py --ollama "add 25 and 15, then multiply by 2"   # local model, no key
+python math_agent.py --ollama "add 25 and 15, then multiply by 2"   # local qwen2.5:7b, no key
+python math_agent.py --ollama=qwen2.5:14b                          # any installed Ollama model
 python math_agent.py --test    # tool self-check, no API calls
 """
 import os, sys
@@ -61,9 +62,10 @@ def search_wikipedia(query: str) -> str:
 tools_updated = [add_numbers, new_subtract_numbers, multiply_numbers, divide_numbers, search_wikipedia]
 
 
-def build_agent(local=False):
+def build_agent(local=None):
+    """local = an Ollama model name, or None for Groq."""
     if local:  # Ollama speaks the same OpenAI API; the key is ignored but required
-        llm_ai = ChatOpenAI(model=OLLAMA_MODEL, api_key="ollama", base_url="http://localhost:11434/v1", timeout=120)
+        llm_ai = ChatOpenAI(model=local, api_key="ollama", base_url="http://localhost:11434/v1", timeout=120)
     else:
         llm_ai = ChatOpenAI(model=MODEL, api_key=os.getenv("GROQ_API_KEY"),
                             base_url="https://api.groq.com/openai/v1", timeout=60)
@@ -89,8 +91,9 @@ if __name__ == "__main__":
         sys.exit(test())
     sys.stdout.reconfigure(encoding="utf-8")  # model output has non-cp1252 chars (e.g. 202f)
     args = sys.argv[1:]
-    local = "--ollama" in args
-    query = " ".join(a for a in args if a != "--ollama") or "What is the population of Canada? Multiply it by 0.75"
+    flag = next((a for a in args if a.startswith("--ollama")), None)
+    local = flag and (flag.partition("=")[2] or OLLAMA_MODEL)
+    query = " ".join(a for a in args if a != flag) or "What is the population of Canada? Multiply it by 0.75"
     response = build_agent(local).invoke({"messages": [("human", query)]})
 
     print("\nMessage sequence:")

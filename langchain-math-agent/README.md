@@ -37,10 +37,33 @@ It uses the same `GROQ_API_KEY` from `llm-api/.env` as `agent.py` (get a free ke
 python math_agent.py                                      # default: Canada population x 0.75
 python math_agent.py "add 25 and 15, then multiply by 2"
 python math_agent.py --ollama                             # local qwen2.5:7b via Ollama, no key
+python math_agent.py --ollama=qwen2.5:14b                 # any installed Ollama model
+python compare.py                                         # Groq vs Ollama head-to-head (below)
 python math_agent.py --test                               # tool self-check, no model calls
 ```
 
 The script prints every message in the run (human, AI tool calls, tool results, final answer), so you can follow how the agent breaks a question into steps.
+
+## Groq vs Ollama
+
+`compare.py` asks each model the same 4 questions 3 times (36 runs, 2026-10-23). The same agent code, tools and system prompt are used each time; only the model changes.
+
+| Model | Where | Auto-graded | Strict review | Median time |
+|---|---|---|---|---|
+| `gpt-oss-120b` | Groq (cloud) | 12/12 | **12/12** | 2.3s |
+| `qwen2.5:7b` | Ollama (local) | 11/12 | **10/12** | 3.5s |
+| `qwen2.5:14b` | Ollama (local) | 7/12 | **5/12** | 13s (its failures came back in ~1s) |
+
+Questions: add 25 and 15 then ×2 · Canada's population ×0.75 · divide 10 by 0 then add 5 · Everest's height ÷2.
+The auto-grader only checks the final answer for the right number or words, so I also read every trace ("strict review"). Some runs passed the grader with nonsense tool calls; for example, 14b quietly divided by 1 instead of 0 and then said the result was "undefined".
+
+What the traces showed:
+
+- **Groq was correct every time.** For divide-by-zero it answered "undefined" without calling a tool at all. It was slowest on Everest (12–25s) because it re-searched Wikipedia until it found the exact 8,848.86 m.
+- **7b was solid.** It searched before calculating in every Canada run. Its two misses: once it wrote a tool call as plain text instead of making a real call, and once it ignored the 10 ÷ 0 error and answered 10 + 5 = 15.
+- **14b was worse than 7b, and about 4× slower.** It ignored "one tool at a time": it fired calls with placeholder arguments like `'<result_of_previous>'` or `{'tool_result': 0}` before it had results, then retried. In 4 of 12 runs it wrote the tool call as text with stray characters (`遆`, `范冰春`), so Ollama never ran it. One Everest run took 44s and searched Wikipedia 7 times.
+
+**Takeaway:** a bigger model isn't automatically a better agent. Tool calling depends on how a model was trained and how its chat template formats tool calls, not just its size. Measure before you switch. Default local model stays `qwen2.5:7b`.
 
 ## Learnings
 
