@@ -11,6 +11,7 @@ Everything runs on **free tiers** (Groq, Gemini, OpenRouter) or locally (Ollama)
 | `all_free.py` | Sends one prompt to every configured provider at temperature 0 and 1.0 to compare models and randomness |
 | `agent.py` | Terminal coding agent: 12 tools, approvals for every edit and command, sandboxed file access |
 | `evals.py` | Scores the agent on 11 fixed tasks and logs results to `eval_log.txt` |
+| `langchain-math-agent/` | The same agent idea built with LangChain's `create_agent`: arithmetic tools + Wikipedia lookup ([README](langchain-math-agent/README.md)) |
 | `agent_skeleton.py` | Build-it-yourself version: the 8 parts of an agent as stubs, with a checker that tells you the next step |
 
 ## Setup
@@ -41,6 +42,19 @@ A model + tools + loop. The model picks a tool, the code runs it, the result goe
 - Notes saved with `save_note` are loaded into the next session
 
 Run the built-in checks: `python agent.py --test`
+
+## Hand-rolled vs. LangChain
+
+`agent.py` builds the loop by hand. `langchain-math-agent/` uses `create_agent`. Both run on the same Groq model and key.
+
+| | `agent.py` (hand-rolled) | `langchain-math-agent` |
+|---|---|---|
+| Tool schemas | Written as JSON by hand | Generated from `@tool` type hints and docstrings |
+| The loop | Own `while` loop over `chat.completions` | `create_agent` (LangGraph) runs it |
+| Size | ~345 lines, 12 tools | ~100 lines, 5 tools |
+| Approvals, sandbox, context budget, rollback | Built in | Not included; you'd add them as middleware |
+
+LangChain removes the boilerplate: schemas, the message loop and argument validation. The parts that make an agent safe to run on your machine (approvals, path sandboxing, secret blocking) are still yours to write. Most of `agent.py` is that work, not the loop.
 
 ## Evals
 
