@@ -2,7 +2,7 @@
 
 Calling LLMs from Python with the `openai` client, then building a tool-using coding agent on top of free models.
 
-Everything runs on **free tiers** (Groq, Gemini, OpenRouter) or locally (Ollama). The same `OpenAI()` client talks to all of them by swapping `base_url`.
+This started as a course exercise on calling the OpenAI API from Python. Instead of paying for OpenAI, I kept the `openai` client and moved to open-weight models: Groq's free cloud tier (mainly OpenAI's open-weight `gpt-oss-120b`) and Ollama for running models like `qwen2.5` locally. Gemini and OpenRouter free tiers are wired in too. The same `OpenAI()` client talks to all of them by swapping `base_url`.
 
 ## Files
 
